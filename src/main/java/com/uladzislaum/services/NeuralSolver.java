@@ -8,7 +8,6 @@ import lombok.SneakyThrows;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Stack;
 import java.util.Random;
 
 public class NeuralSolver {
@@ -30,7 +29,7 @@ public class NeuralSolver {
     }
 
     public void recognizeAndVisualise(double[] inputs, NeuralNetwork network, List<String> names) {
-        getVisualisation(network, names, recognize(inputs, network));
+        NeuralDrawer.getVisualisation(network, names, recognize(inputs, network));
     }
 
     public <T> T recognizeEntity(double[] inputs, NeuralNetwork network, Map<Integer, T> entitymap) {
@@ -88,36 +87,6 @@ public class NeuralSolver {
         return outputs;
     }
 
-    private void getVisualisation(NeuralNetwork network, List<String> names, int answer) {
-        List<Integer> layerSizes = new java.util.ArrayList<>();
-        layerSizes.add(network.getLayers()[0].getNodesInCount());
-        layerSizes.addAll(
-                Arrays.stream(network.getLayers())
-                .toList()
-                .stream()
-                .map(Layer::getNodesOutCount)
-                .toList());
-        int maxSize = layerSizes.stream().max(Integer::compare).orElse(0);
-        Stack<String> namesStack = new Stack<>();
-        for (String name : names) {
-            namesStack.push(name);
-        }
-
-        for (int i = 0; i < maxSize; i++) {
-            StringBuilder line = new StringBuilder();
-            for (Integer layerSize : layerSizes) {
-                line.append(layerSize - i > 0 ? "*   " : "    ");
-            }
-            if(!namesStack.isEmpty()) {
-                line.append(namesStack.pop());
-            }
-            if(i == answer) {
-                line.append(" - Solution");
-            }
-            System.out.println(line);
-        }
-    }
-
     private Layer randomizeWeights(Layer layer) {
         Random random = new Random();
         double[][] weights = new double[layer.getWeights().length][layer.getWeights()[0].length];
@@ -135,15 +104,16 @@ public class NeuralSolver {
         return biases;
     }
 
-    private void trainNetwork(NeuralNetwork network, double[] inputs, double[] outputs) {
-        double[] loopOutputs = calculateNetwork(inputs, network);
-        double[] errors = new double[outputs.length];
+    private double cost(double[] loopOutputs, double[] outputs) {
         double[] nodeCosts = new double[outputs.length];
         for(int i = 0; i < outputs.length; i++) {
-            errors[i] = outputs[i] - loopOutputs[i];
             nodeCosts[i] = Math.pow((loopOutputs[i] - outputs[i]), 2);
         }
-        double cost = Arrays.stream(nodeCosts).sum();
+        return Arrays.stream(nodeCosts).sum();
+    }
+
+    private void trainNetwork(NeuralNetwork network, double[] inputs, double[] outputs) {
+        double cost = cost(calculateNetwork(inputs, network), outputs);
 
         //sigmoid(error*weight) * LEARN_SPEED
     }
